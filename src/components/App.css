@@ -1,0 +1,16 @@
+.course-sequence .hidden {
+  display: none; }
+.course-sequence table {
+  max-width: 800px !important;
+  width: 800px !important; }
+.course-sequence th,
+.course-sequence td {
+  padding: 0 10px;
+  line-height: inherit;
+  border: 1px solid darkgrey; }
+.course-sequence .check {
+  opacity: 0;
+  transition: opacity 2s ease-in-out; }
+  .course-sequence .check.saved {
+    opacity: 1;
+    transition: opacity 2s ease-in-out; }

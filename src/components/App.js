@@ -1,64 +1,71 @@
+/**
+ * handles main program menu and rendering of program
+ */
 import React from 'react';
 import './App.scss';
-import EditForm from './EditForm';
+import Section from './Section';
 import base64 from 'base-64';
 
-const AJAX_BASE  = window.wpApiSettings.wprb_ajax_base;
-
-export default class App extends React.Component {
+const AJAX_BASE  = window.wpApiSettings.root + window.wpApiSettings.wprb_ajax_base;
+class App extends React.Component {
 	constructor() {
 		super();
 
-		this.saveItem = this.saveItem.bind( this );
-		this.toggleVisible = this.toggleVisible.bind( this );
-		this.getOptions = this.getOptions.bind( this );
-		this.handleChange = this.handleChange.bind( this );
-		this.getOptions = this.getOptions.bind( this );
+		//this.saveItem = this.saveItem.bind( this );
+		this.getPrograms = this.getPrograms.bind( this );
+		this.handleProgramSelect = this.handleProgramSelect.bind( this );
 
 		// initial state
 		this.state = {
-			options: {},
-			visible: {},
-			saved: {}
+			programs: {},
+            sequence: {},
+            selected: 0,
 		};
 	}
 
-	getOptions() {
+	getPrograms() {
 		window.jQuery.ajax({
-			url: AJAX_BASE + '/records',
+			url: AJAX_BASE + '/programs',
 			dataType: 'json',
 			method: 'GET',
 			beforeSend: function ( xhr ) {
 				xhr.setRequestHeader( 'X-WP-Nonce', window.wpApiSettings.nonce );
 			},
 			success: function(data) {
-				this.setState( { options: data } );
+				this.setState( { programs: data } );
 			}.bind(this)
 		  });
 	}
 
-	componentDidMount() {
-		this.getOptions();
+	getSequence( program ) {
+        var url = AJAX_BASE + '/sequence/' + program;
+        console.log( 'fetching sequence', url )
+		window.jQuery.ajax({
+			url: url,
+			dataType: 'json',
+			method: 'GET',
+			beforeSend: function ( xhr ) {
+				xhr.setRequestHeader( 'X-WP-Nonce', window.wpApiSettings.nonce );
+			},
+			success: function(data) {
+				this.setState( { sequence: data } );
+			}.bind(this)
+		  });
 	}
 
-	toggleVisible( e, key ) {
-		e.preventDefault();
-		const visible = this.state.visible;
-
-		visible[ key ] = true !== visible[ key ];
-
-		this.setState( { visible } );
+    componentDidMount() {
+		this.getPrograms();
 	}
 
-	handleChange( key, value ) {
-		let opts = this.state.options;
-		opts[ key ] = value;
 
-		this.setState( { opts } );
-	}
-
+    handleProgramSelect( e ){
+        e.preventDefault();
+        console.log( 'handleProgramSelect change event', e.target.value );
+        this.getSequence( e.target.value );
+    }
+    
 	saveItem( key ) {
-		const val = this.state.options[ key ];
+		const val = this.state.programs[ key ];
 		const post_data = {
 			key: key,
 			value: val
@@ -90,36 +97,32 @@ export default class App extends React.Component {
 	}
 
 	render() {
-		const items = Object.keys( this.state.options ).map( key =>
-			<tr key={key}>
-				<td>{key}</td>
-				<td>
-					<p>
-						<span className="edit-me">{this.state.options[ key ]} | <a href="#" onClick={( e ) => this.toggleVisible( e, key )}>Edit ✏️</a></span>
-						<span className={this.state.saved[ key ] ? 'saved check' : 'check'}>✅</span>
-					</p>
-
-					<EditForm
-						handleSubmit={this.saveItem}
-						handleChange={this.handleChange}
-						key={key} id={key}
-						value={this.state.options[ key ]}
-						visible={this.state.visible[ key ]}
-						hideItem={this.toggleVisible} />
-				</td>
-			</tr>
+		const items = Object.keys( this.state.programs ).map( key =>
+			<option key={key} value={key}>
+            {this.state.programs[ key ]}
+            </option>
 		);
-
+        const elements = this.state.sequence;
 		return (
-			<div className="wp-react-boilerplate">
-				<h1>WP React Boilerplate</h1>
-				<h4>Options Editor</h4>
-				<table>
-					<tbody>
+			<div className="course-sequence"><form id="program_select">
+				<select id="program_select_menu" name="program" onChange={this.handleProgramSelect}>
 					{items}
-					</tbody>
-				</table>
-			</div>
+				</select>
+			</form>
+            { elements.length ? this.renderSections( elements ) : '' }
+            </div>
 		);
 	}
+    renderSections( elements ){
+        return ( <ul className="sequence-sections">
+        {
+
+         elements.map((value, index) => {
+            console.log( value, index );
+            return <li key={index}><Section section_id={value.section_id} rows={value.rows} /></li>
+        })}
+        </ul> )
+    }
+    
 }
+export default App;
